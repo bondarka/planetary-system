@@ -7,7 +7,9 @@ var concat = require("gulp-concat")
 var sourcemaps = require("gulp-sourcemaps")
 var autoprefixer = require("gulp-autoprefixer")
 var gls = require('gulp-live-server');
-var open = require ("gulp-open");
+var open = require("gulp-open");
+var notify = require("gulp-notify");
+var plumber = require("gulp-plumber");
 var server;
 
 gulp.task("clean", [], function() {
@@ -22,16 +24,25 @@ gulp.task("html", [], function() {
 })
 
 gulp.task("img", [], function() {
-    return gulp.src("img/*.png")
+    return gulp.src(["img/*.png", "img/*.ico"])
         .pipe(gulp.dest("dist/img"));
 })
 gulp.task("styles", [], function() {
     return gulp.src("css/style.less")
+        .pipe(plumber({
+            "errorHandler": function(err) {
+                // console.log(err["message"]);
+                var args = Array.prototype.slice.call(arguments);
+                notify.onError({ "title": "Error", "message": err["message"] }).apply(this, args);
+                this.emit("end");
+            }
+        }))
         .pipe(sourcemaps.init())
         .pipe(less())
         .pipe(autoprefixer())
         .pipe(sourcemaps.write())
         .pipe(gulp.dest("dist/css"))
+        .pipe(notify("Styles rebilde"))
 })
 
 gulp.task("bootstrap", [], function() {
@@ -56,13 +67,13 @@ gulp.task("serve", [], function() {
     server.start();
 })
 
-gulp.task("open",[],function(){
-	var options ={
-		uri:"http://localhost:5000",
-		app:"chrome"
-	};
-	gulp.src('.')
-	.pipe(open(options))
+gulp.task("open", [], function() {
+    var options = {
+        uri: "http://localhost:5000",
+        app: "chrome"
+    };
+    gulp.src('.')
+        .pipe(open(options))
 })
 
 
@@ -75,9 +86,9 @@ gulp.task("default", ["clean"], function() {
     gulp.run("vendor");
     gulp.run("serve");
     gulp.run("open");
-     // gulp.watch("./index.html", ['html']);
-    gulp.watch("css/*.less", function(file){
-    	gulp.run("styles");
-    	server.notify.apply(server, [file]);
+    // gulp.watch("./index.html", ['html']);
+    gulp.watch("css/*.less", function(file) {
+        gulp.run("styles");
+        server.notify.apply(server, [file]);
     });
 });
